@@ -2,8 +2,8 @@
 
 Project realized under the **SNS Automatyk** student research group.  
 This project focuses on **remotely and autonomous controlling a conveyor belt** and a fan while collecting data from sensors (DHT11, HC-SR04) via the **MQTT** protocol.
-Mqtt Broker is set on Raspberry Pi 4B and ESP32s publish and subscribe topics (mentioned in scripts).
-Additionally, we use a **Raspberry Pi camera** for measuring objects on the conveyor (OpenCV).
+MQTT Broker is set on Raspberry Pi 4B and ESP32s publish and subscribe topics (mentioned in scripts).
+We use a **Raspberry Pi camera** for measuring objects on the conveyor (OpenCV).
 
 
 ## Table of Contents
