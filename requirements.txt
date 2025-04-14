@@ -1,8 +1,0 @@
-Flask
-Flask-Migrate
-Flask-MQTT
-Flask-SQLAlchemy
-imutils
-numpy
-opencv-python
-scipy
