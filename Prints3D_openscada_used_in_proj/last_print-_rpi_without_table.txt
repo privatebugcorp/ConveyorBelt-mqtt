@@ -1,0 +1,82 @@
+// Wymiary pudełka
+length    = 89;  
+width     = 180; 
+height    = 73;   
+thickness = 3;    
+
+// Otwory na śruby
+bolt_diameter = 5;   
+hole_offset   = 7;   
+
+module ventilation_grid_side(y, x, z, grid_width, grid_height, hole_size, spacing) {
+    for(i = [0 : spacing : grid_width - hole_size])
+        for(j = [0 : spacing : grid_height - hole_size])
+            translate([x, y + i, z + j])
+                cube([thickness + 2, hole_size, hole_size], center=false);
+}
+
+module box() {
+    difference() {
+        // Bryła pudełka
+        cube([length, width, height]);
+
+        // Wydrążenie wnętrza
+        translate([thickness, thickness, thickness])
+            cube([length - 2*thickness, width - 2*thickness, height - 2*thickness]);
+
+        // Usunięcie górnej ściany
+        translate([0, 0, height - thickness])
+            cube([length, width, thickness + 1]);
+
+        // Otwarta boczna ściana
+        translate([0, width - thickness, 0])
+            cube([length, thickness + 1, height]);
+
+        // Otwory na śruby - lewa strona
+        for (z = [0, height-thickness]) {
+            translate([length - hole_offset*2.4, width - hole_offset*3, z])
+                cylinder(h=thickness * 2, d=bolt_diameter, center=false);
+        }
+
+        // Otwory na śruby - prawa strona
+        for (z = [0, height-thickness]) {
+            translate([hole_offset*2.4, width - hole_offset*3, z])
+                cylinder(h=thickness * 2, d=bolt_diameter, center=false);
+        }
+
+        // NOWE Otwory na śruby na pionowych ściankach, 23 od górnej krawędzi
+        translate([length - thickness, width - hole_offset*3, height - 23])
+            rotate([0,90,0])
+                cylinder(h=thickness * 2, d=bolt_diameter, center=true);
+
+        translate([thickness, width - hole_offset*3, height - 23])
+            rotate([0,90,0])
+                cylinder(h=thickness * 2, d=bolt_diameter, center=true);
+
+        // Otwór prostokątny (kwadrat) na lewej pionowej ściance
+        translate([10, 11, height - 20 - 7])
+            cube([thickness + 89, 39, 7]);
+
+        // Otwór okrągły (średnica 20 mm), 4 mm od dolnej krawędzi na lewej pionowej ściance
+        translate([89, 11 + 39/2, thickness + 1 + 10])
+            rotate([0,90,0])
+                cylinder(h=thickness + 6, d=20, center=true);
+
+        // Kratka wentylacyjna na dłuższej ścianie
+        ventilation_grid_side(65, length - thickness + 1, (height - 40)/2, 50, 40, 5, 10);
+
+        // === NOWE dwa symetryczne otwory średnica 14.8 mm na krótszej pionowej ścianie (prostopadłej) ===
+        // Pozycja wysokościowa identyczna jak środek otworu d=20
+        hole_center_height = thickness + 1 + 10;
+        side_wall_x = length / 2; // symetrycznie na środku ścianki
+
+        for (offset = [-20, 20]) {
+            translate([side_wall_x + offset, -1, hole_center_height])
+                rotate([90,0,0])
+                    cylinder(h=thickness + 5, d=14.8, center=true);
+        }
+    }
+}
+
+// Generowanie pudełka z otworami
+box();

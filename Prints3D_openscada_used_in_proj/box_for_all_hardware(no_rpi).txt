@@ -1,0 +1,66 @@
+// ------------------
+// Podstawowe wymiary
+length    = 120;
+width     = 177;
+height    = 70;
+thickness = 3;
+
+// Otwory śrubowe
+bolt_diameter = 6;
+hole_offset   = 7;
+
+// ------------------
+// Główna funkcja "box"
+module box() {
+    difference() {
+        // (1) Zewnętrzna bryła
+        cube([length, width, height]);
+
+        // (2) Wycięcie wnętrza bez górnej ścianki
+        translate([thickness, thickness, thickness]) {
+            cube([
+                length - 2*thickness,
+                width  - 1*thickness, // asymetryczna ścianka w oryginale
+                height - thickness
+            ]);
+        }
+
+        // (3) Dziurki po bokach (z Twojego oryginału)
+        //     - "lewa" strona, bez rotate
+        for (z = [0, height - thickness]) {
+            translate([length - hole_offset*2.4, width - hole_offset*3, z]) {
+                cylinder(h = thickness*2, d = bolt_diameter, center=false);
+            }
+        }
+
+        //     - "prawa" strona, bez rotate
+        for (z = [0, height - thickness]) {
+            translate([hole_offset*2.4, width - hole_offset*3, z]) {
+                cylinder(h = thickness*2, d = bolt_diameter, center=false);
+            }
+        }
+        
+        // (4) Dziurki po bokach, ale z rotate([0,90,0])
+        //     - "lewa" strona, z rotate
+        for (z = [0, height - thickness]) {
+            translate([length - hole_offset*2.4, width - hole_offset*3, z]) {
+                rotate([0,90,0]) {
+                    cylinder(h = thickness*2, d = bolt_diameter, center=false);
+                }
+            }
+        }
+
+        //     - "prawa" strona, z rotate
+        for (y= [0, height - thickness]) {
+            translate([0, 156, 44]) {
+                rotate([0,90,0]) {
+                    cylinder(h =210, d = bolt_diameter, center=false);
+                }
+            }
+        }
+    }
+}
+
+// ------------------
+// Wywołanie modułu
+box();

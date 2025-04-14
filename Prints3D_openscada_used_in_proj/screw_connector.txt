@@ -1,0 +1,24 @@
+// Parametry
+length = 52;       // Długość
+width  = 12;       // Szerokość
+thickness = 2;     // Grubość (wysokość)
+offset = 15+3;       // Odległość otworów od środka długości
+hole_diameter = 6; // Średnica otworu pod M6
+
+difference() {
+    // 1. Bryła główna
+    cube([length, width, thickness], center=false);
+    
+    // 2. Otwory - usuwamy (odejmujemy) cylindry z bryły
+    // Środek prostopadłościanu na osi X to length/2 = 26
+    // Otwory wzdłuż (X) w pozycjach 26 ± offset
+    // Wzdłuż (Y) - środek szerokości to width/2 = 6
+    // Wysokość Z = thickness, cylinder nie jest centrowany w Z (center=false),
+    // więc sięga od z=0 do z=2.
+    
+    translate([26 + offset, width/2, 0]) 
+        cylinder(d=hole_diameter, h=thickness, center=false);
+    
+    translate([26 - offset, width/2, 0]) 
+        cylinder(d=hole_diameter, h=thickness, center=false);
+}

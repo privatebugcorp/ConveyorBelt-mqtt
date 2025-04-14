@@ -1,0 +1,29 @@
+// Parametry kątownika
+base_length = 29;     // długość podstawy
+wall_height = 29;     // wysokość pionowej ścianki
+wall_thickness = 3;   // grubość ścianek
+wall_width = 10;      // szerokość ścianki
+bolt_diameter = 5;    // średnica otworów
+
+module bracket() {
+    difference() {
+        union() {
+            // dolna ścianka
+            cube([base_length, wall_width, wall_thickness]);
+
+            // pionowa ścianka
+            cube([wall_thickness, wall_width, wall_height]);
+        }
+
+        // otwór na pionowej ściance
+        translate([wall_thickness / 2, wall_width / 2, 18.5 + wall_thickness])
+            rotate([0, 90, 0])
+                cylinder(h = wall_width + 2, d = bolt_diameter, center = true);
+
+        // otwór na dolnej ściance
+        translate([21, wall_width / 2, wall_thickness / 2])
+            cylinder(h = wall_thickness * 3, d = bolt_diameter, center = true);
+    }
+}
+
+bracket();

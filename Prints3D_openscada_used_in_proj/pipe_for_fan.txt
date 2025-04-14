@@ -1,0 +1,79 @@
+
+// Parametry
+wall_thickness = 3;   // grubość ścianki
+outer_radius   = 38;  // promień zewnętrzny ćwiartki koła
+arc_height     = 75;  // "długość" wzdłuż osi (wysokość) ćwiartki koła
+tube_height    = 28;  // całkowita wysokość prostopadłościanu (w tym górna ścianka 3)
+tube_width     = 69;  // wewnętrzna szerokość rury-prostopadłościanu
+tube_length    = 32;  // długość prostopadłościanu
+
+$fn = 100; // liczba segmentów (im wyższa, tym gładsze krawędzie)
+
+//////////////////////////////////////////////////////////////
+// Moduł: Ćwiartka koła (pusta w środku)
+//////////////////////////////////////////////////////////////
+module cwiertka_kola(r=outer_radius, gr=wall_thickness, h=arc_height) {
+    // Tworzymy „ćwiartkową” ściankę: zewnętrzny walec minus wewnętrzny,
+    // a następnie tniemy go, żeby został tylko zakres 90° (ćwiartka).
+    difference() {
+        // 1) Walec zewnętrzny
+        intersection() {
+            cylinder(r=r, h=h, center=false);
+            // Aby wziąć tylko ćwiartkę: przecinamy z dużym sześcianem w obszarze x>0,y>0
+            translate([0,0,0])
+                cube([1000,1000,h+2], center=false); 
+            // Ten cube tworzy ćwiartkę w dodatnim X i Y
+        }
+        // 2) Walec wewnętrzny
+        intersection() {
+            
+            cylinder(r=r-gr, h=h-3, center=false);
+            translate([0,0,3])
+                cube([1000,1000,h+2], center=false);
+        }
+    }
+}
+
+// Moduł: Rura (prostopadłościan bez podłogi)
+module rura_bez_podlogi(
+    h=tube_height,
+    w=tube_width,
+    l=tube_length,
+    t=wall_thickness
+) {
+    // Rura to prostopadłościan z wyciętym wnętrzem od spodu.
+    // Załóżmy, że spód jest otwarty, góra ma grubość 3 (w t).
+    difference() {
+        // Zewnętrzny prostopadłościan
+        cube([w + 2*t, l + 2*t, h], center=false);
+        
+        // Wycięcie wnętrza (bez dolnej ścianki)
+        // – usuwamy wnętrze aż do wysokości (h - t), bo górna ścianka = t
+        translate([t, 0, 0]) {
+            cube([w, l+3, h ], center=false);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////
+// Łączenie (union) obu elementów
+//////////////////////////////////////////////////////////////
+union() {
+    // 1) Ćwiartka koła
+    //
+    // Domyślnie pojawia się w rogu (ćwiartka w X>0, Y>0).
+    // Możemy ją zostawić w (0,0) albo przesunąć.
+    rotate([0,90,0]) {
+    // Generowanie pudełka z otworami
+    translate([0,0,45-6 ])
+    cwiertka_kola(outer_radius, wall_thickness, arc_height);
+}
+    // 2) Rura prostokątna bez podłogi
+    //
+    // Przesuńmy ją tak, by ścianka dotykała ćwiartki.
+    // Dopasuj w razie potrzeby do swojego projektu.
+    translate([outer_radius+1,0 , 0])  // proste przesunięcie wzdłuż X
+        rura_bez_podlogi(tube_height, tube_width, tube_length, wall_thickness);
+}
+
+

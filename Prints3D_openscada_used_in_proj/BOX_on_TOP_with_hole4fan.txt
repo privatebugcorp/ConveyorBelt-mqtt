@@ -1,0 +1,75 @@
+// Wymiary pudełka
+length    = 123;  // 12 cm TO JEST SZEROKOSC
+width     = 200;  // 20 cm
+height    = 186;  // 20 cm  
+thickness = 3;    // Grubość ścianek
+
+// Otwory na śruby
+bolt_diameter = 6;   // Średnica otworu na śrubę (M6)
+hole_offset   = 7;   // Odstęp otworów od krawędzi
+
+// Otwór prostokątny na górze
+rect_hole_width  = 70;  // 7 cm szerokości
+rect_hole_height = 30;  // 3 cm wysokości
+rect_hole_widthRPI = 20; //NA MAGISTRALE KAMERKI
+rect_hole_heightRPI = 5;
+
+module box() {
+    difference() {
+        //
+        // 1) Bryła i wnętrze pudełka
+        cube([length, width, height]);
+
+        translate([thickness, thickness, thickness])
+        cube([length - 2*thickness, width - 2*thickness, height - 2*thickness]);
+
+        // 2) Usunięcie przedniej ściany (otwarcie z przodu)
+        translate([-1, 0, 0]) 
+        cube([thickness + 1, width, height]); 
+
+        // 3) Usunięcie bocznej ściany (otwarcie z boku)
+        translate([0, width - thickness, 0])
+        cube([length, thickness + 1, height]);
+        //lewa strona dziury
+        for (z = [0, height-thickness]) {
+            translate([length - hole_offset*2.4, width - hole_offset*3, z]) {
+                // cylinder() w OpenSCAD domyślnie stoi wzdłuż osi Z,
+                // więc nie potrzebujemy rotate()
+                cylinder(
+                    h      = thickness * 2,   // "wysokość" cylindra > grubość ścianki
+                    d      = bolt_diameter,
+                    center = false           // startuje od z=0 lub z=height "w górę"
+                );
+            }
+        }
+        //prawa strona dziurek
+         for (z = [0, height-thickness]) {
+            translate([ hole_offset*2.4, width - hole_offset*3, z]) {
+                // cylinder() w OpenSCAD domyślnie stoi wzdłuż osi Z,
+                // więc nie potrzebujemy rotate()
+                cylinder(
+                    h      = thickness * 2,   // "wysokość" cylindra > grubość ścianki
+                    d      = bolt_diameter,
+                    center = false           // startuje od z=0 lub z=height "w górę"
+                );
+            }
+        }
+        //
+        // 5) Otwór prostokątny na górnej ścianie (przeniesiony na środek "przeciwnej" strony)
+        translate([(length - rect_hole_width) / 2,
+                   width - rect_hole_height - hole_offset,
+                   height - thickness - 1])
+        cube([rect_hole_width, rect_hole_height, thickness + 2]);
+
+        translate([(length - rect_hole_widthRPI) / 2,
+                   12+ - rect_hole_heightRPI ,
+                    0])
+        cube([rect_hole_widthRPI, rect_hole_heightRPI, thickness + 2]);
+    }
+}
+
+// Generowanie pudełka z otworami
+rotate([0,0,0]) {
+    // Generowanie pudełka z otworami
+    box();
+}
