@@ -1,0 +1,206 @@
+//SEARCH FOR "!!"", to adapt/change CODE 
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+
+// IBT_2 Control Pins
+#define RPWM_Output    21
+#define LPWM_Output    32 //good direction for me
+#define R_EN           25
+#define L_EN           33
+
+// FAN Control
+#define L_EN_Fan         18
+#define LPWM_Output_Fan  19
+#define Tacho_Pin        13  
+
+// Wake up pin (unused rn)
+#define WAKEUP_PIN GPIO_NUM_23
+
+// Wi-Fi credentials
+const char* ssid1 = "";
+const char* password1 = "";
+const char* mqtt_server1 = "";  
+
+const char* ssid2 = "";
+const char* password2 = "";
+const char* mqtt_server2 = "";  
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Global distance variable
+float distanceValue;
+int conveyorValue;
+int fanValue;
+// Wi-Fi connection logic
+bool attemptWiFiConnection() {
+  int retry_count = 0;
+  while (WiFi.status() != WL_CONNECTED && retry_count < 5) {
+    delay(1000);
+    Serial.println("Retrying Wi-Fi connection...");
+    retry_count++;
+  }
+  return (WiFi.status() == WL_CONNECTED);
+}
+
+void connectWiFi() {
+  Serial.println("Connecting to Wi-Fi...");
+  WiFi.begin(ssid1, password1);
+  if (!attemptWiFiConnection()) {
+    Serial.println("Switching to Automatyk's Wi-Fi...");
+    WiFi.begin(ssid2, password2);
+    if (!attemptWiFiConnection()) {
+      // If you have a 3rd SSID, you could try it here; else restart. CHANGE FOR BOTH ESP!!
+      Serial.println("Failed to connect to any Wi-Fi, restarting...");
+      ESP.restart();
+    }
+  }
+  Serial.println("WiFi connected");
+  Serial.print("Local IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+//  MQTT connection logic
+void reconnectMQTT() {
+  int retry_count = 0;
+  while (!client.connected() && retry_count < 5) {
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "ESP32Client-" + String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str())) {
+      Serial.println("MQTT connected");
+      
+      // Subscribe to all needed topics
+      client.subscribe("/home/control/fanPWM");
+      client.subscribe("/home/control/conveyorPWM");
+      client.subscribe("/set_control_mode");
+      client.subscribe("/home/sensors/distance");
+    } else {
+      Serial.print("Failed, rc=");
+      Serial.println(client.state()); 
+      delay(5000);
+      retry_count++;
+    }
+  }
+  if (!client.connected()) {
+    Serial.println("Failed to connect MQTT, restarting...");
+    ESP.restart();
+  }
+}
+
+void configureMQTT() {
+  String localIP = WiFi.localIP().toString();
+  if (localIP.startsWith("192.168.1")) {
+    client.setServer(mqtt_server1, 1883);
+    Serial.println("Using MQTT server: " + String(mqtt_server1));
+  } else if (localIP.startsWith("192.168.0")) {
+    client.setServer(mqtt_server2, 1883);
+    Serial.println("Using MQTT server: " + String(mqtt_server2));
+  }
+  client.setCallback(callback);
+}
+// MQTT callback function
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.print("message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  Serial.println(message);
+
+  // DISTANCE from broker - RPi
+  if (String(topic) == "/home/sensors/distance") {
+    StaticJsonDocument<80> doc;
+    DeserializationError error = deserializeJson(doc, message);
+    if (!error) {
+      distanceValue = doc["distance"];
+      Serial.print("Stored distance in global variable: ");
+      Serial.println(distanceValue);
+    } else {
+      Serial.println("Error parsing distance JSON");
+    }
+  }
+
+  // FAN control
+  if (String(topic) == "/home/control/fanPWM") {
+    int fanValue = message.toInt();
+    if (fanValue >= 0 && fanValue <= 255) {
+      // Real ESP32 PWM: use ledcWrite, but for quick test:
+      analogWrite(LPWM_Output_Fan, fanValue); 
+      Serial.print("Fan speed set to: ");
+      Serial.println(fanValue);
+    } else {
+      Serial.println("Invalid fan PWM received!");
+    }
+  }
+  // CONVEYOR control
+if (String(topic) == "/home/control/conveyorPWM"){
+    int conveyorValue = message.toInt();
+    if (conveyorValue >= 0 && conveyorValue <= 255) {
+      analogWrite(LPWM_Output, conveyorValue);
+      Serial.print("Conveyor speed set to: ");
+      Serial.println(conveyorValue);
+    } else {
+      Serial.println("Invalid conveyor PWM received!");
+    }
+  }
+}
+// 4) Setup
+void setup() {
+  Serial.begin(112500);
+  delay(2000);
+  
+  connectWiFi();
+  configureMQTT();
+
+  // Configure motor pins
+  pinMode(RPWM_Output, OUTPUT);
+  pinMode(LPWM_Output, OUTPUT);
+  pinMode(R_EN, OUTPUT);
+  pinMode(L_EN, OUTPUT);
+  digitalWrite(R_EN, HIGH);
+  digitalWrite(L_EN, HIGH);
+
+  // Configure fan pins
+  pinMode(LPWM_Output_Fan, OUTPUT);
+  pinMode(L_EN_Fan, OUTPUT);
+  digitalWrite(L_EN_Fan, HIGH);
+
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnectMQTT();
+  }
+  client.loop();
+  // Every 5 seconds, print the distanceValue & values of pwm's
+  static unsigned long lastPrint = 0;
+  if (millis() - lastPrint >= 5000) {
+    lastPrint = millis();
+    Serial.print("Current distanceValue = ");
+    Serial.println(distanceValue);
+    Serial.print("Fan speed set to: ");
+    Serial.println(fanValue);
+    Serial.print("Conveyor speed set to: ");
+    Serial.println(conveyorValue);
+  }
+// to implement, distance sensor doesnt works like it shold so it s rn commented  
+// if (distanceValue < 28 && distanceValue > 3 ){ //28 =end of conveyor && 3 = 4(start point)-1 
+
+//     Serial.println("Waking up, object detected!");
+//     delay(8000); //delay for camly put item
+//     //pwm controll LOGIC!!
+// }
+//   else {    
+//     client.loop();
+
+//     if (!(distanceValue <= 28 && distanceValue >= 3 )) {
+//     // We've transported item to the end of conveyor belt, so:
+//     Serial.println("We've transported item to the end of conveyor belt, going to sleep");
+//     esp_sleep_enable_ext0_wakeup(WAKEUP_PIN, 0);  // Wake on GPIO4 LOW again
+//     delay(10000);
+//     esp_deep_sleep_start(); // esp going to sleep
+//    }
+  }
