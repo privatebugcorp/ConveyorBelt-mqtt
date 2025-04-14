@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Streaming</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+  <script>
+    // Fetch sensor data + distance + RPi CPU temperature
+    function updateSensorData() {
+      // 1) Temperature & humidity
+      fetch("/sensor_data")
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("sensor-temperature-value").innerHTML =
+            `<a href="/chart/temperature">${data.temperature ? data.temperature + "°C" : "No Data"}</a>`;
+        })
+        .catch(error => console.error("Error fetching sensor data:", error));
+
+      // 2) Distance
+	fetch('/distance')
+	  .then(response => response.json())
+	  .then(data => {
+	    document.getElementById('sensor-distance-value').textContent = 
+	      data.distance !== undefined ? data.distance + " cm" : "No Data";
+	  });
+
+	      // 3) RPi CPU Temperature
+      fetch("/rpi_temperature")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          document.getElementById("rpi-temp-value").innerText =
+            data.temperature || "No Data";
+        })
+        .catch(error => {
+          console.error("Error fetching RPi temperature:", error);
+          document.getElementById("rpi-temp-value").innerText =
+            "Error, API disconnect";
+        });
+    }
+
+    // Call updateSensorData() every 1 second (10 for debug temporary)
+    setInterval(updateSensorData, 1000);
+
+    document.addEventListener("DOMContentLoaded", updateSensorData);
+
+    // Set PWM
+    async function setPWM(value) {
+      try {
+        const response = await fetch(`/set_pwm/${value}`, { method: "POST" });
+        const data = await response.json();
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert(`LIGHT SET to: ${data.pwm}, (INVERSE LOGIC!!)`);
+        }
+      } catch (error) {
+        console.error("Error setting PWM:", error);
+      }
+    }
+  </script>
+
+</head>
+
+<body>
+  <h1>Live Video</h1>
+	<!-- DC Motor Control Block -->
+<div class="content-container">
+
+    <!-- Motor Control Block (Left Side) -->
+    <div class="motor-container">
+        <h3>DC FAN</h3>
+        <input type="range" min="0" max="255" value="128" id="fanSlider" oninput="updateFanSpeed(this.value)" />
+        <span id="fanValue">128</span>
+
+        <h3>DC CONVEYOR</h3>
+        <input type="range" min="0" max="255" value="128" id="conveyorSlider" oninput="updateConveyorSpeed(this.value)" />
+        <span id="conveyorValue">128</span>
+
+        <!-- Buttons for switching control modes -->
+        <h3>Motor Control Mode</h3>
+        <button onclick="setControlMode('esp32')">ESP32 Control</button>
+        <button onclick="setControlMode('manual')">Manual Control</button>
+    </div>
+	
+    <!-- Video Stream -->
+    <div class="video-container">
+        <h3> </h3>
+	<img src="{{ url_for('video_bp.measured_video') }}" alt="Live Stream not available" />
+    </div>
+
+    <!-- Sensor Readings & Controls -->
+    <div class="sensor-container">
+        <h3>SENSOR DATA:</h3>
+        <div class="sensor-data">
+            <h4>Distance:   </h4>
+            <h2 id="sensor-distance-value">Loading...</h2>
+        </div>
+
+        <h3>LIGHT CONTROL</h3>
+        <button onclick="setPWM(255)">No light</button>
+        <button onclick="setPWM(0)">Max light</button>
+        <button onclick="setPWM('default')">Controlled by ESP32</button>
+
+        <div class="sensor-data">
+            <h4>Temperature near DC motor:</h4>
+            <h2 id="sensor-temperature-value"><a href="/chart/temperature">Loading...</a></h2>
+	</div>
+<!-- Combined Chart -->
+      <div class="sensor-data">
+        <h4>Temperature and Humidity Chart:</h4>
+        <h2><a href="/chart/combined">Open chart</a></h2>
+      </div>
+
+      <!-- RPi CPU Temperature -->
+      <div class="sensor-data">
+        <h4>RPi CPU Temperature:</h4>
+        <h2 id="rpi-temp-value">Loading...</h2>        
+	</div>
+    </div>
+</div>
+
+<script>
+    let controlMode = "esp32"; // Default mode
+
+    // Update fan speed only if in manual mode
+    function updateFanSpeed(value) {
+        document.getElementById('fanValue').textContent = value;
+        if (controlMode === "manual") {
+            fetch('/set_fan_speed/' + value, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => console.log('Fan speed:', data))
+                .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Update conveyor speed only if in manual mode
+    function updateConveyorSpeed(value) {
+        document.getElementById('conveyorValue').textContent = value;
+        if (controlMode === "manual") {
+            fetch('/set_conveyor_speed/' + value, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => console.log('Conveyor speed:', data))
+                .catch(error => console.error('Error:', error));
+        }
+    }
+
+    // Function to switch between ESP32 and Manual control
+    function setControlMode(mode) {
+        controlMode = mode;
+        fetch('/set_control_mode/' + mode, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => console.log('Control Mode:', data))
+            .catch(error => console.error('Error:', error));
+    }
+</script>
+
+  <footer>
+    <p>SNS Automatyk - Krzaczek</p>
+  </footer>
+</body>
+</html>
