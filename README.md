@@ -9,8 +9,7 @@ Additionally, we use a **Raspberry Pi camera** for measuring objects on the conv
 1. [Project Description](#project-description)  
 2. [Hardware Setup](#hardware-setup)  
 3. [Technologies Used](#technologies-used)  
-4. [Repository Structure](#repository-structure)  
-5. [Installation and Launch (Python/Flask)](#installation-and-launch-pythonflask)    
+4. [Installation and Launch (Python/Flask)](#installation-and-launch-pythonflask)    
 
 ---
 
@@ -58,13 +57,6 @@ Now the conveyor belt works on program delays, because the distance sensor does 
 
 ---
 
-## Repository Structure
-
-
-> **Note**: The `static/` and `templates/` folders must be included into venv, so that Flask can locate those files and properly serve pages/styles.
-
----
-
 ## Installation and Launch 
 
 ## 1.  Clone the repository  
@@ -78,10 +70,13 @@ Now the conveyor belt works on program delays, because the distance sensor does 
 python3 -m venv venv
 source venv/bin/activate
 ```
-## 3. Install requirements
+## 3. Install requirements after entering pi/venv
    ```bash
 pip install -r requirements.txt
 ```
+---
+> **Note**: The `static/` and `templates/` folders must be included into folder Venv, so that Flask can locate those files and properly serve pages/styles. <
+---
 ## 4. Start the application
    ```bash
 python app.py
