@@ -1,4 +1,4 @@
-//SEARCH FOR "!!"", TO adapt/cahnge CODE, 
+//SEARCH FOR "!!"", to adapt/change CODE, 
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
