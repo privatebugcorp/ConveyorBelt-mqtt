@@ -1,5 +1,6 @@
 # ConveyorBelt-mqtt
-![Uploading printed_conveyor.png…]()
+<img width="818" alt="model" src="https://github.com/user-attachments/assets/2afc0932-f1f9-4c95-85e1-591d96aa8351" />
+
 
 Project realized under the **SNS Automatyk** students scientific association.  
 This project focuses on **remotely and autonomous controlling a conveyor belt** and a fan while collecting data from sensors (DHT11, HC-SR04) via the **MQTT** protocol.
